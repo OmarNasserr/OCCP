@@ -48,13 +48,15 @@
 
     <div id="chargers-list" class="list-group mb-4">
       {% for charger in chargers %}
-          <a href="{% url 'charger_detail' charger.charge_point_id %}" class="list-group-item list-group-item-action">
-              <strong>{{ charger.charge_point_id }}</strong>
-              <!-- Add an ID to the status span -->
-              <span id="status-{{ charger.charge_point_id }}" class="badge badge-info float-right">{{ charger.status }}</span>
-          </a>
+        <div class="list-group-item list-group-item-action">
+          <strong>{{ charger.charge_point_id }}</strong>
+          <div class="float-right">
+            <button class="btn btn-success btn-sm mr-2" onclick="startCharging('{{ charger.charge_point_id }}')">Start Charging</button>
+            <span id="status-{{ charger.charge_point_id }}" class="badge badge-info">{{ charger.status }}</span>
+          </div>
+        </div>
       {% empty %}
-          <p class="text-muted">No chargers available.</p>
+        <p class="text-muted">No chargers available.</p>
       {% endfor %}
     </div>
 
@@ -63,6 +65,35 @@
   </div>
 
   <script>
+    async function startCharging(chargerId) {
+        try {
+            const token = localStorage.getItem("token");  // Get the token from localStorage
+            if (!token) {
+                alert("You are not logged in. Please log in first.");
+                return;
+            }
+
+            const response = await fetch(`/api/chargers/start/${chargerId}/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}",  // Include CSRF token for Django
+                    "Authorization": `Bearer ${token}`,  // Include the token in the Authorization header
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                alert(data.message);  // Show success message
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message);  // Show error message
+            }
+        } catch (error) {
+            console.error("Error starting charging:", error);
+            alert("Failed to start charging.");
+        }
+    }
     // Open a WebSocket connection to the frontend consumer
     const ws = new WebSocket("ws://" + window.location.host + "/ws/frontend/");
 
