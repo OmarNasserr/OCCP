@@ -1,0 +1,39 @@
+services:
+  backend:
+    build: .
+    container_name: ocpp_backend
+    command: bash -c "python manage.py migrate && python create_superuser.py && daphne ocpp_backend.asgi:application --bind 0.0.0.0 --port 8000"
+    env_file:
+      - private.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=ocpp_backend.settings
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - OCPPNETWORK
+
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ocpp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - OCPPNETWORK
+
+volumes:
+  postgres_data:
+
+networks:
+  OCPPNETWORK:
+    name: OCPPNETWORK
+    driver: bridge
