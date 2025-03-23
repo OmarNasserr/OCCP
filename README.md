@@ -32,9 +32,9 @@ This repository contains a backend module for managing Electric Vehicle (EV) cha
    docker compose build
    docker compose up
    ```
-#### Note: The PostgreSQL server is configured to automatically start with a user having credentials:
-##### Username: admin
-##### Password: admin
+    #### Note: The PostgreSQL server is configured to automatically start with a user having credentials:
+    ##### Username: admin
+    ##### Password: admin
 
 3. **Access the Application:**
     ##### Once the containers are running, the server is available at:
