@@ -29,7 +29,7 @@ This repository contains a backend module for managing Electric Vehicle (EV) cha
 2. **Build and Run with Docker Compose:**
    
    ```bash
-   docker-compose build
+   docker compose build
    docker compose up
    ```
 #### Note: The PostgreSQL server is configured to automatically start with a user having credentials:
