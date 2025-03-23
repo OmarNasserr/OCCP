@@ -12,6 +12,7 @@ django.setup()
 from .models import Charger, Transaction, StatusLog
 from asgiref.sync import sync_to_async
 from ocpp.v16.datatypes import IdTagInfo
+from channels.layers import get_channel_layer
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +36,21 @@ class ChargePoint(BaseChargePoint):
                 "charge_point_vendor": charge_point_vendor,
             }
         )
+        charger.connected_at = datetime.now().isoformat()
+        await sync_to_async(charger.save)()
         # Log the status
         await sync_to_async(StatusLog.objects.create)(
             charger=charger,
             status="Connected"
         )
+        # Broadcast a message to the frontend
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send("frontend", {
+            "type": "charger_update",
+            "charger_id": self.id,
+            "status": "Connected",
+            "message": f"Charger {self.id} booted with model {charge_point_model} and vendor {charge_point_vendor}"
+        })
         return call_result.BootNotification(
             current_time=datetime.now().isoformat(timespec="seconds"),
             interval=10,
@@ -55,6 +66,14 @@ class ChargePoint(BaseChargePoint):
             charger=charger,
             status="Heartbeat"
         )
+        # Broadcast heartbeat event
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send("frontend", {
+            "type": "charger_update",
+            "charger_id": self.id,
+            "status": "Heartbeat",
+            "message": f"Heartbeat from charger {self.id} at {datetime.now().strftime('%H:%M:%S')}"
+        })
         return call_result.Heartbeat(
             current_time=datetime.now().isoformat(timespec="seconds")
         )
@@ -75,6 +94,14 @@ class ChargePoint(BaseChargePoint):
             charger=charger,
             status="Transaction Started"
         )
+        # Broadcast start transaction event
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send("frontend", {
+            "type": "charger_update",
+            "charger_id": self.id,
+            "status": "Transaction Started",
+            "message": f"Transaction started on charger {self.id} (Transaction ID: {transaction.id})"
+        })
         return call_result.StartTransaction(
             transaction_id=transaction.id,
             id_tag_info=IdTagInfo(AuthorizationStatus.accepted)
@@ -95,6 +122,14 @@ class ChargePoint(BaseChargePoint):
             charger=charger,
             status="Transaction Stopped"
         )
+        # Broadcast stop transaction event
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send("frontend", {
+            "type": "charger_update",
+            "charger_id": self.id,
+            "status": "Transaction Stopped",
+            "message": f"Transaction {transaction_id} stopped on charger {self.id}"
+        })
         return call_result.StopTransaction()
 
 class OCPPConsumer(AsyncWebsocketConsumer):
@@ -110,6 +145,16 @@ class OCPPConsumer(AsyncWebsocketConsumer):
         try:
             await self.accept()
             logger.info(f"Charger {self.charge_point_id} connected.")
+            # Send a message to frontend group
+            channel_layer = get_channel_layer()
+            message = {
+                "type": "charger_update",
+                "charger_id": self.charge_point_id,
+                "status": "Connected",
+                "message": f"Charger {self.charge_point_id} connected."
+            }
+            logger.info(f"Sending WebSocket message: {message}")
+            await channel_layer.group_send("frontend", message)
         except Exception as e:
             logger.error(f"Failed to connect charger {self.charge_point_id}: {e}")
             raise
@@ -125,6 +170,14 @@ class OCPPConsumer(AsyncWebsocketConsumer):
                 charger=charger,
                 status="Disconnected"
             )
+            # Inform frontend about disconnection
+            channel_layer = get_channel_layer()
+            await channel_layer.group_send("frontend", {
+                "type": "charger_update",
+                "charger_id": self.charge_point_id,
+                "status": "Disconnected",
+                "message": f"Charger {self.charge_point_id} disconnected."
+            })
         except Charger.DoesNotExist:
             logger.error(f"Charger {self.charge_point_id} not found in the database.")
 
