@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     #apps
     'chargers',
     'auth_app',
+    'frontend',
 ]
 
 ASGI_APPLICATION = 'ocpp_backend.asgi.application'
@@ -148,6 +149,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
 }
 
 LOGGING = {
