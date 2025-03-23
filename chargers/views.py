@@ -5,7 +5,8 @@ from .models import Charger, Transaction, StatusLog
 from .serializers import ChargerSerializer
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 class ChargerListAPIView(generics.ListAPIView):
     queryset = Charger.objects.all()
@@ -32,6 +33,14 @@ class StartChargingAPIView(generics.GenericAPIView):
                 charger=charger,
                 status="Charging Started"
             )
+            # Broadcast the charging started event
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)("frontend", {
+                "type": "charger_update",
+                "charger_id": charger.charge_point_id,
+                "status": "Charging Started",
+                "message": f"Charger {charger.charge_point_id} started charging."
+            })
             return Response({
                 "message": f"Charger {charger.charge_point_id} started charging.",
                 "transaction_id": transaction.id,
