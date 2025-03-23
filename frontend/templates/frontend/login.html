@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2 class="text-center mb-4">Login</h2>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" placeholder="Enter username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" placeholder="Enter password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById("login-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            // Send a login request to the API
+            const response = await fetch("/api/auth/login/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}",  // Include CSRF token for Django
+                },
+                body: JSON.stringify({ username, password }),
+            });
+
+            if (response.ok) {
+                // Redirect to the dashboard on successful login
+                window.location.href = "{% url 'dashboard' %}";
+            } else {
+                // Show an error message if login fails
+                alert("Invalid username or password.");
+            }
+        });
+    </script>
+</body>
+</html>

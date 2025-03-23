@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Charger Detail - {{ charger.charge_point_id }}</title>
+    <!-- Use Bootstrap for styling -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+  <div class="container mt-4">
+    <h1>Charger Detail for {{ charger.charge_point_id }}</h1>
+    <div class="card mb-4">
+      <div class="card-body">
+        <p><strong>Model:</strong> {{ charger.charge_point_model }}</p>
+        <p><strong>Vendor:</strong> {{ charger.charge_point_vendor }}</p>
+        <p>
+          <strong>Status:</strong>
+          <!-- Add an ID to the status badge -->
+          <span id="status-{{ charger.charge_point_id }}" class="badge badge-info">{{ charger.status }}</span>
+        </p>
+        <p><strong>Connected at:</strong> {{ charger.connected_at }}</p>
+      </div>
+    </div>
+
+    <h2>Status Logs</h2>
+    <ul class="list-group mb-4">
+      {% for log in logs %}
+          <li class="list-group-item">{{ log.timestamp }} - {{ log.status }}</li>
+      {% empty %}
+          <li class="list-group-item text-muted">No logs available.</li>
+      {% endfor %}
+    </ul>
+
+    <div class="mb-4">
+      <a class="btn btn-primary" href="{% url 'dashboard' %}">Back to Dashboard</a>
+    </div>
+
+    <h2>Real-time Updates</h2>
+    <div id="messages" class="alert alert-secondary" style="height:200px; overflow-y:auto;"></div>
+  </div>
+
+  <script>
+    // Open a WebSocket connection to the frontend consumer
+    const ws = new WebSocket("ws://" + window.location.host + "/ws/frontend/");
+
+    ws.onopen = function(event) {
+      console.log("WebSocket connection opened");
+    };
+
+    ws.onmessage = function(event) {
+        console.log("Message received:", event.data);
+        const data = JSON.parse(event.data);
+
+        // Append the message to the "messages" div
+        const messageDiv = document.getElementById("messages");
+        const p = document.createElement("p");
+        p.textContent = data.message;
+        messageDiv.appendChild(p);
+
+        // Update the badge if the message includes charger_id and status
+        if (data.charger_id && data.status) {
+            const chargerId = data.charger_id.trim();
+            const statusElem = document.getElementById("status-" + chargerId);
+            if (statusElem) {
+                statusElem.textContent = data.status;
+                if (data.status === "Connected") {
+                    statusElem.className = "badge badge-success";
+                } else if (data.status === "Disconnected") {
+                    statusElem.className = "badge badge-info";
+                } else {
+                    statusElem.className = "badge badge-info";
+                }
+            }
+        }
+    };
+
+    ws.onerror = function(event) {
+      console.error("WebSocket error observed:", event);
+    };
+
+    ws.onclose = function(event) {
+      console.log("WebSocket connection closed");
+    };
+  </script>
+</body>
+</html>
