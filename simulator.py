@@ -1,6 +1,6 @@
 import asyncio
 import datetime
-
+import sys
 import websockets
 import logging
 from ocpp.v16 import ChargePoint as OCPPChargePoint
@@ -41,8 +41,7 @@ class ChargePoint(OCPPChargePoint):
         response = await self.call(request)
         print(f"StopTransaction response: {response}")
 
-async def main():
-    charger_id = "CHARGER001"
+async def main(charger_id):
     ws_url = f"ws://localhost:8000/ws/ocpp/{charger_id}/"
     async with websockets.connect(ws_url) as ws:
         cp_instance = ChargePoint(charger_id, ws)
@@ -70,4 +69,12 @@ async def send_heartbeat_periodically(cp_instance):
 if __name__ == '__main__':
     # Enable logging to see the connection process.
     logging.basicConfig(level=logging.INFO)
-    asyncio.run(main())
+
+    # Get charger ID from command-line arguments
+    if len(sys.argv) < 2:
+        print("Usage: python simulator.py <charger_id>")
+        sys.exit(1)
+    charger_id = sys.argv[1]
+
+    # Run the simulator
+    asyncio.run(main(charger_id))
