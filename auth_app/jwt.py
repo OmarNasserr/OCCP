@@ -68,7 +68,6 @@ class CustomTokenObtainPairSerializer(TokenObtainSerializer):
 
         return {
             'message': 'Login Successful.',
-            'id': user.id,
             'username': user.username,
             'token': {
                 'refresh': data["refresh"],
