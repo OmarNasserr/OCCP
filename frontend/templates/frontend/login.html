@@ -57,6 +57,9 @@
 
             if (response.ok) {
                 // Redirect to the dashboard on successful login
+                const data = await response.json();
+                console.log(data);
+                localStorage.setItem("token", data.token.access);
                 window.location.href = "{% url 'dashboard' %}";
             } else {
                 // Show an error message if login fails
